@@ -1,12 +1,10 @@
 import telebot
 import webbrowser
-
 bot = telebot.TeleBot('6822090549:AAGhLf_X1eFmGWB2TSPAv1vSVRSdAGecpPs')
-from telegram import ReplyKeyboardMarkup, KeyboardButton
+#from telegram import ReplyKeyboardMarkup, KeyboardButton
 @bot.message_handler(commands=['start'])
 def main(message):
     bot.send_message(message.chat.id,f'Привет, {message.from_user.first_name}, я один из самых лучших телеграмботов по подготовке к ЕГЭ по информатике и смогу подготовить даже тебя который способен в питоне написать только Hello world ')
-
 @bot.message_handler(commands=['info'])
 def main(message):
     bot.send_message(message.chat.id, f'У меня ты сможешь не только подготовиться к ЕГЭ но и еще узнать ответы на ЕГЭ, ОГЭ как диагностические работы так и экзамены только тсссс...')
@@ -39,6 +37,7 @@ def main(message):
     bot.send_message(message.chat.id, f'Я вас понял сейчас вы получите видеуроки по всем заданиям.')
     bot.send_message(message.chat.id, f'Задание 1-27:https://www.youtube.com/watch?v=vJ-8xl6SpcU&list=PLa2Ie7RlCO_PmixwJMuVQiGqepMW6eAcV')
     bot.send_message(message.chat.id, f'Удачи с подготовкой!')
+
 
 @ bot.message_handler(commands=['video_OGE'])
 def main(message):
