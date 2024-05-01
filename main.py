@@ -1,108 +1,68 @@
-import telebot
-import g4f
-import webbrowser
-
-bot = telebot.TeleBot('6822090549:AAGhLf_X1eFmGWB2TSPAv1vSVRSdAGecpPs')
-
-
-# from telegram import ReplyKeyboardMarkup, KeyboardButton
-@bot.message_handler(commands=['start'])
-def start(message):
-    mes1 = message
-    a = 0
-    while a == 0:
-        a += 1
-        k = ''
-        response = g4f.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "user", "content": 'представься как самый гейский бот, созданный для подготовки к ЕГЭ и '
-                                            'ОГЭ по информатике'}],
-            stream=True,
-        )
-        for message in response:
-            k += message
-    message = mes1
-    bot.send_message(message.chat.id, f'привет,{message.from_user.first_name}')
-    bot.send_message(message.chat.id, f'{k}')
+from aiogram import Bot, Dispatcher, executor, types
+from aiogram.types import Message
+from ChatGPT import gpt
+import sqlite3
+import threading
+    
+TOKEN = 'YOUR_API_KEY'
+bot = Bot(TOKEN)            
+dp = Dispatcher(bot)
 
 
-@bot.message_handler(func=lambda message: True)
-def reply(message):
-    k=''
-    mes1=message
-    a=0
-    while a==0:
-        a+=1
-        response = g4f.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "user", "content": message.text}],
-            stream=True,
-        )
-        for message in response:
-            k += message
-    message=mes1
-    bot.send_message(message.chat.id, f'{k}')
-bot.infinity_polling(none_stop=True)
+def create_table():                        # Создаём бд, если её ещё нет
+    connect = sqlite3.connect('gpt_us.db')
+    cursor = connect.cursor()
 
-@bot.message_handler(commands=['info'])
-def info(message):
-    bot.send_message(message.chat.id,
-                     f'У меня ты сможешь не только подготовиться к ЕГЭ но и еще узнать ответы на ЕГЭ, ОГЭ как диагностические работы так и экзамены только тсссс...')
-    bot.send_message(message.chat.id, f'во мне заложены много программ которые помогут тебе в продвижении к 100 балам.')
-    bot.send_message(message.chat.id,
-                     f'я могу предоставить тебе: теории, задания, видеоуроки, ну а если тебе хочется иметь достум к материалу вне сети я могу предоставить тебе файлы с теорией и с вариантми ЕГЭ и ОГЭ')
+    sql_query = """
+                    CREATE TABLE IF NOT EXISTS ChatGPT (
+                    id INT,
+                    con TEXT,
+                    con2 TEXT
+                    )
+                    """
+    cursor.execute(sql_query)
+    connect.commit()
+    connect.close()    
 
 
-@bot.message_handler(commands=['theory'])
-def theory(message):
-    bot.send_message(message.chat.id, f'На какое задание тебе нужна теория с заданиями ОГЭ или ЕГЭ?')
+@dp.message_handler(commands='start')            # Обработка команды /start
+async def start(message: Message):
+    connect = sqlite3.connect('gpt_us.db')        # Подключаемся к бд
+    cursor = connect.cursor()
+    sql_query = f"""
+                            SELECT * FROM ChatGPT WHERE id = '{int(message.chat.id)}'
+                            """
+    user = cursor.execute(sql_query).fetchone()
+    
+    if user == None:        # Проверяем, есть ли юзер в бд. Добавляем
+        sql_query = f"INSERT INTO ChatGPT(id, con, con2) VALUES ('{message.from_user.id}', '', '')"
+        cursor.execute(sql_query)
+         
+    await message.answer('Привет, это чат-бот на основе модели gpt 3.5🔥\nПриступим!')     # Приветствуем
+
+    connect.commit()        # Закрываем бд
+    connect.close()
 
 
-@bot.message_handler(commands=['EGE'])
-def EGE(message):
-    bot.send_message(message.chat.id, f'В моем арсенале есть теория на задание 1-27.')
-    bot.send_message(message.chat.id, f'Вот тебе сайт с тиорией там есть все что тебе нужно. https://ctege.info')
-    bot.send_message(message.chat.id,
-                     f'Ну а если тебе нужны задания то вот сайт для практики. https://inf-ege.sdamgia.ru/?redir=1')
-    bot.send_message(message.chat.id, f'Нужна будет помощь зови!')
-    bot.send_message(message.chat.id, f'Удачи в подготовке!!')
+@dp.message_handler(commands='reset')    # Функция отчистки контекста в бд. 
+async def reset(message: Message):    
+    connect = sqlite3.connect('gpt_us.db')
+    cursor = connect.cursor()
+    sql_query = f"UPDATE ChatGPT SET con = '', con2 = '' WHERE id = {message.from_user.id}"
+    cursor.execute(sql_query)  
+    
+    await message.answer('✅История диалога отчищена✅')
+    
+    connect.commit()
+    connect.close()
 
 
-@bot.message_handler(commands=['OGE'])
-def OGE(message):
-    bot.send_message(message.chat.id, f'В моем арсенале есть теория на задание 1-15 выбирай.')
-    bot.send_message(message.chat.id,
-                     f'Вот тебе сайт сайт с теорией там есть все что тебе нужно. https://ctege.info/teoriya-oge-po-informatike/sbornik-teorii-dlya-informatiki-oge.html')
-    bot.send_message(message.chat.id,
-                     f'Ну а если тебе нужны задания то вот сайт для практики. https://inf-oge.sdamgia.ru/')
-    bot.send_message(message.chat.id, f'Нужна будет помощь зови!')
-    bot.send_message(message.chat.id, f'Удачи в подготовке!!')
-
-
-@bot.message_handler(commands=['video_EGE'])
-def video_EGE(message):
-    bot.send_message(message.chat.id, f'Я вас понял сейчас вы получите видеуроки по всем заданиям.')
-    bot.send_message(message.chat.id,
-                     f'Задание 1-27:https://www.youtube.com/watch?v=vJ-8xl6SpcU&list=PLa2Ie7RlCO_PmixwJMuVQiGqepMW6eAcV')
-    bot.send_message(message.chat.id, f'Удачи с подготовкой!')
-
-
-@bot.message_handler(commands=['video_OGE'])
-def video_OGE(message):
-    bot.send_message(message.chat.id, f'Я вас понял сейчас вы получите видеуроки по всем заданиям.')
-    bot.send_message(message.chat.id,
-                     f'Задание 1-15:https://www.youtube.com/watch?v=BvaYKV4Oa3U&list=PLa2Ie7RlCO_NSuh586_Ew7pkoFr-NZdFz')
-    bot.send_message(message.chat.id, f'Удачи с подготовкой!')
-
-
-@bot.message_handler(commands=['Python_lvl_1'])
-def python_lvl_1(message):
-    bot.send_message(message.chat.id, f'Я услышал ваш запрос.')
-    bot.send_message(message.chat.id,
-                     f'К вашему вниманию я предоставляю учебник по програмированнию для начинающих.https://pymanual.github.io/')
-    bot.send_message(message.chat.id, f'Удачи с обучением!')
-
-
-bot.infinity_polling(none_stop=True)
+@dp.message_handler(content_types=types.ContentType.TEXT)        # Обрабатываем запрос
+async def mes(message: types.Message): 
+    thread = threading.Thread(target=gpt, args=(message.text, message.from_user.id, message.message_id))        # Запускаем в новом потоке обработчик
+    thread.start()
+       
+    
+if __name__ == '__main__':
+    create_table()
+    executor.start_polling(dp)
